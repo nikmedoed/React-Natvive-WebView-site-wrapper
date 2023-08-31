@@ -5,14 +5,28 @@ import {
   Platform,
   Linking,
   RefreshControl,
+  Dimensions,
+  StyleSheet
 } from 'react-native';
 import { WebView, WebViewNavigation } from 'react-native-webview';
-import { WebViewErrorEvent, ShouldStartLoadRequest, WebViewMessageEvent } from 'react-native-webview/src/WebViewTypes';
+import {
+  WebViewErrorEvent,
+  ShouldStartLoadRequest,
+  WebViewMessageEvent
+} from 'react-native-webview/src/WebViewTypes';
 import MessageBox from './MessageBox';
 import { URL } from './constants'
 import LoadingAnimation from './LoadingAnimation';
 import { injectedJavaScript } from './pageEnhancement'
 import ErrorScreen from './ErrorScreen'
+// import { ScrollView } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+
+const styles = StyleSheet.create({
+  view: { flex: 1, height: '100%' }
+});
+
 
 const WebDriver = () => {
   const webViewRef = useRef<WebView | null>(null);
@@ -20,6 +34,7 @@ const WebDriver = () => {
   const [error, setError] = useState<string | null>(null);
   const [currentUrl, setCurrentUrl] = useState<string>(URL);
   const [backButtonPress, setBackButtonPress] = useState<boolean>(false);
+  const [height, setHeight] = useState(Dimensions.get('screen').height);
 
   const onAndroidBackPress = useCallback(() => {
     if (webViewRef.current) {
@@ -36,7 +51,6 @@ const WebDriver = () => {
       } else {
         setBackButtonPress(false);
         // BackHandler.exitApp()
-        return false;
       }
     }
     return false;
@@ -93,40 +107,64 @@ const WebDriver = () => {
     }
   };
 
+  const [isEnabled, setEnabled] = useState(typeof handleRefresh === 'function');
+
 
   return (
-    <View style={{ flex: 1 }}>
-      <WebView
-        ref={webViewRef}
-        source={{ uri: URL }}
-        domStorageEnabled={true}
-        cacheEnabled={true}
-        javaScriptEnabled={true}
-        onNavigationStateChange={handleWebViewNavigationStateChange}
-        style={{ flex: 1 }}
-        renderLoading={() => <LoadingAnimation />}
-        allowFileAccess={true}
-        autoManageStatusBarEnabled={true}
-        startInLoadingState={true}
-        allowsBackForwardNavigationGestures={true}
-        nestedScrollEnabled={true}
-        pullToRefreshEnabled={true}
-        onError={handleWebViewError}
-        renderError={(e) => <ErrorScreen errorText={e} action={webViewRef.current?.reload} />}
-        injectedJavaScript={injectedJavaScript}
-        onShouldStartLoadWithRequest={shouldStartLoadWithRequest}
-        onMessage={onMessage}
-      />
-      {refreshing ? <LoadingAnimation /> : null}
-      <MessageBox
-        message={error}
-        position="top"
-        type="error"
-      />
-      {backButtonPress ? <MessageBox
-        message={'Нажмите ещё раз, чтобы выйти'}
-      /> : null}
-    </View>
+    <GestureHandlerRootView style={styles.view}>
+      <View style={styles.view}>
+        <ScrollView
+          style={styles.view}
+          onLayout={(e) => setHeight(e.nativeEvent.layout.height)}
+          contentContainerStyle={{ flex: 1 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              enabled={isEnabled}
+            />
+          }
+        >
+          <WebView
+            style={[styles.view, { height }]}
+            onScroll={(e) => setEnabled(
+              typeof handleRefresh === 'function' &&
+              e.nativeEvent.contentOffset.y === 0
+            )
+            }
+            ref={webViewRef}
+            source={{ uri: URL }}
+            domStorageEnabled={true}
+            cacheEnabled={true}
+            javaScriptEnabled={true}
+            onNavigationStateChange={handleWebViewNavigationStateChange}
+            renderLoading={() => <LoadingAnimation />}
+            allowFileAccess={true}
+            autoManageStatusBarEnabled={true}
+            startInLoadingState={true}
+            allowsBackForwardNavigationGestures={true}
+            nestedScrollEnabled={true}
+            pullToRefreshEnabled={true}
+            onError={handleWebViewError}
+            renderError={(e) => <ErrorScreen
+              errorText={e}
+              action={webViewRef.current?.reload} />}
+            injectedJavaScript={injectedJavaScript}
+            onShouldStartLoadWithRequest={shouldStartLoadWithRequest}
+            onMessage={onMessage}
+          />
+        </ScrollView>
+        {refreshing ? <LoadingAnimation /> : null}
+        <MessageBox
+          message={error}
+          position="top"
+          type="error"
+        />
+        {backButtonPress ? <MessageBox
+          message={'Нажмите ещё раз, чтобы выйти'}
+        /> : null}
+      </View>
+    </GestureHandlerRootView>
   );
 };
 

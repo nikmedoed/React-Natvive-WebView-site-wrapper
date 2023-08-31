@@ -24,4 +24,8 @@ var mailtoLinks = document.querySelectorAll('a[href^="mailto:"]');
 
 const specificScript = ``
 
-export const injectedJavaScript = [linkScript, mailsScript, specificScript].join("\n")
+export const injectedJavaScript = [
+    linkScript,
+    mailsScript,
+    specificScript
+].join("\n")
