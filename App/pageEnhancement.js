@@ -12,6 +12,16 @@ for (var i = 0; i < links.length; i++) {
 }
 `;
 
+const mailsScript = `
+var mailtoLinks = document.querySelectorAll('a[href^="mailto:"]');
+    mailtoLinks.forEach(function(link) {
+      link.addEventListener('click', function(event) {
+        event.preventDefault();
+        window.ReactNativeWebView.postMessage(link.href);
+      });
+    });
+`
+
 const specificScript = ``
 
-export const injectedJavaScript = linkScript + specificScript
+export const injectedJavaScript = [linkScript, mailsScript, specificScript].join("\n")

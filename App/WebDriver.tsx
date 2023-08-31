@@ -3,10 +3,11 @@ import {
   View,
   BackHandler,
   Platform,
+  Linking,
   RefreshControl,
 } from 'react-native';
 import { WebView, WebViewNavigation } from 'react-native-webview';
-import { WebViewErrorEvent } from 'react-native-webview/src/WebViewTypes';
+import { WebViewErrorEvent, ShouldStartLoadRequest, WebViewMessageEvent } from 'react-native-webview/src/WebViewTypes';
 import MessageBox from './MessageBox';
 import { URL } from './constants'
 import LoadingAnimation from './LoadingAnimation';
@@ -67,6 +68,23 @@ const WebDriver = () => {
     setError(`Ошибка загрузки:\n${description}`.trim());
   };
 
+  const shouldStartLoadWithRequest = (event: ShouldStartLoadRequest) => {
+    const { url } = event;
+    if (url.startsWith(URL)) {
+      return true;
+    }
+    Linking.openURL(url);
+    return false;
+  };
+
+  const onMessage = (event: WebViewMessageEvent) => {
+    const data = event.nativeEvent.data;
+    if (data.startsWith('mailto:')) {
+      Linking.openURL(data);
+    }
+  };
+
+
   const handleRefresh = () => {
     console.log("rrefresh")
     setRefreshing(true);
@@ -96,6 +114,8 @@ const WebDriver = () => {
         onError={handleWebViewError}
         renderError={(e) => <ErrorScreen errorText={e} action={webViewRef.current?.reload} />}
         injectedJavaScript={injectedJavaScript}
+        onShouldStartLoadWithRequest={shouldStartLoadWithRequest}
+        onMessage={onMessage}
       />
       {refreshing ? <LoadingAnimation /> : null}
       <MessageBox
