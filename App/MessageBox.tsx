@@ -4,7 +4,7 @@ import { FONT_BASE } from './constants'
 
 
 interface MessageBoxProps {
-    message: string | null;
+    message: string | null | undefined;
     color?: string;
     hideCallback?: () => void;
     position?: 'top' | 'bottom';

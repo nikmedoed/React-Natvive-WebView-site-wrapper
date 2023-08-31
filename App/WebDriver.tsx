@@ -1,11 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
-  ActivityIndicator,
-  TouchableOpacity,
-  StyleSheet,
   View,
-  Text,
-  Modal,
   BackHandler,
   Platform,
   RefreshControl,
@@ -14,9 +9,9 @@ import { WebView, WebViewNavigation } from 'react-native-webview';
 import { WebViewErrorEvent } from 'react-native-webview/src/WebViewTypes';
 import MessageBox from './MessageBox';
 import { URL } from './constants'
-import LoadingIndicator from './LoadingIndicator';
+import LoadingAnimation from './LoadingAnimation';
 import { injectedJavaScript } from './pageEnhancement'
-
+import ErrorScreen from './ErrorScreen'
 
 const WebDriver = () => {
   const webViewRef = useRef<WebView | null>(null);
@@ -91,19 +86,18 @@ const WebDriver = () => {
         javaScriptEnabled={true}
         onNavigationStateChange={handleWebViewNavigationStateChange}
         style={{ flex: 1 }}
-        renderLoading={LoadingIndicator}
+        renderLoading={() => <LoadingAnimation />}
         allowFileAccess={true}
         autoManageStatusBarEnabled={true}
+        startInLoadingState={true}
         allowsBackForwardNavigationGestures={true}
         nestedScrollEnabled={true}
         pullToRefreshEnabled={true}
         onError={handleWebViewError}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
+        renderError={(e) => <ErrorScreen errorText={e} action={webViewRef.current?.reload} />}
         injectedJavaScript={injectedJavaScript}
       />
-      {refreshing ? LoadingIndicator() : null}
+      {refreshing ? <LoadingAnimation /> : null}
       <MessageBox
         message={error}
         position="top"
