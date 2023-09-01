@@ -1,17 +1,15 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
-
 # Getting Started
 
 This is the basic code for creating a react native WebView wrapper for your service.
 Just the basic code with the necessary handlers.
 
 ## Step 1: Init project
-Firstly, create a new project and install dependencies.
+Firstly, create a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
 
-Dependencies:
+And install dependencies:
 
 ```bash
-npm install react-native-webview
+npm install react-native-webview react-native-gesture-handler
 
 # OR using Yarn
 ```

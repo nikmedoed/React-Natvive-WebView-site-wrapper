@@ -56,7 +56,6 @@ const WebDriver = () => {
     return false;
   }, [backButtonPress, currentUrl]);
 
-
   useEffect(() => {
     if (Platform.OS === 'android') {
       BackHandler.addEventListener('hardwareBackPress', onAndroidBackPress);
@@ -66,20 +65,18 @@ const WebDriver = () => {
     }
   }, [onAndroidBackPress]);
 
+  const handleWebViewError = (syntheticEvent: WebViewErrorEvent) => {
+    const { nativeEvent } = syntheticEvent;
+    const { code, description } = nativeEvent;
+    console.error('WebView Error - Code:', code, 'Description:', description);
+    setError(`Ошибка загрузки:\n${description}`.trim());
+  };
 
   const handleWebViewNavigationStateChange = (newNavState: WebViewNavigation) => {
     const { url, loading } = newNavState;
     setRefreshing(loading);
     setCurrentUrl(url);
     return true;
-  };
-
-
-  const handleWebViewError = (syntheticEvent: WebViewErrorEvent) => {
-    const { nativeEvent } = syntheticEvent;
-    const { code, description } = nativeEvent;
-    console.error('WebView Error - Code:', code, 'Description:', description);
-    setError(`Ошибка загрузки:\n${description}`.trim());
   };
 
   const shouldStartLoadWithRequest = (event: ShouldStartLoadRequest) => {

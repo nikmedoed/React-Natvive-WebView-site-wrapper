@@ -20,12 +20,25 @@ var mailtoLinks = document.querySelectorAll('a[href^="mailto:"]');
         window.ReactNativeWebView.postMessage(link.href);
       });
     });
-`
+`;
+
+const target_blank_to_self = `
+(function() {
+    var originalOpen = window.open;
+    window.open = function(url, target, features) {
+      if (target === '_blank') {
+        target = '_self';
+      }
+      originalOpen.call(window, url, target, features);
+    };
+  })();
+`;
 
 const specificScript = ``
 
 export const injectedJavaScript = [
     linkScript,
     mailsScript,
+    target_blank_to_self,
     specificScript
 ].join("\n")
