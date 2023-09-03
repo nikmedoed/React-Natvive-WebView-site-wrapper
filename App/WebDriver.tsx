@@ -97,7 +97,6 @@ const WebDriver = () => {
 
 
   const handleRefresh = () => {
-    console.log("rrefresh")
     setRefreshing(true);
     if (webViewRef.current) {
       webViewRef.current.reload();

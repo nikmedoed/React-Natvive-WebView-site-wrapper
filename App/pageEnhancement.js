@@ -1,5 +1,23 @@
 import { URL } from './constants'
 
+const extraStyles = `
+.super-style-example {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  z-index: 9999;
+}
+`
+
+const extraStylesInsert = `
+var styleSheet = document.createElement('style');
+styleSheet.type = 'text/css';
+styleSheet.innerHTML = \`\n${extraStyles}\n\`;
+document.head.appendChild(styleSheet);
+`
 
 const linkScript = `
 var links = document.getElementsByTagName('a');
@@ -37,8 +55,9 @@ const target_blank_to_self = `
 const specificScript = ``
 
 export const injectedJavaScript = [
-    linkScript,
-    mailsScript,
-    target_blank_to_self,
-    specificScript
+  extraStylesInsert,
+  linkScript,
+  mailsScript,
+  target_blank_to_self,
+  specificScript
 ].join("\n")
