@@ -6,7 +6,8 @@ import {
   Linking,
   RefreshControl,
   Dimensions,
-  StyleSheet
+  StyleSheet,
+  SafeAreaView
 } from 'react-native';
 import { WebView, WebViewNavigation } from 'react-native-webview';
 import {
@@ -16,7 +17,7 @@ import {
   WebViewProgressEvent
 } from 'react-native-webview/src/WebViewTypes';
 import MessageBox from './MessageBox';
-import { URL } from './constants'
+import { URL, COLOR_DARK_MAIN } from './constants'
 import LoadingAnimation from './LoadingAnimation';
 import { injectedJavaScript } from './pageEnhancement'
 import ErrorScreen from './ErrorScreen'
@@ -122,6 +123,7 @@ const WebDriver = () => {
 
   return (
     <GestureHandlerRootView style={styles.view}>
+      <SafeAreaView style={[styles.view, { backgroundColor: COLOR_DARK_MAIN }]}></SafeAreaView>
       <View style={styles.view}>
         <ScrollView
           style={styles.view}
@@ -176,7 +178,8 @@ const WebDriver = () => {
           message={'Нажмите ещё раз, чтобы выйти'}
         /> : null}
       </View>
-    </GestureHandlerRootView>
+    </SafeAreaView>
+    </GestureHandlerRootView >
   );
 };
 
