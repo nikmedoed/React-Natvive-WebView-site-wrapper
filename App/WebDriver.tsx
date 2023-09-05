@@ -123,62 +123,62 @@ const WebDriver = () => {
 
   return (
     <GestureHandlerRootView style={styles.view}>
-      <SafeAreaView style={[styles.view, { backgroundColor: COLOR_DARK_MAIN }]}></SafeAreaView>
-      <View style={styles.view}>
-        <ScrollView
-          style={styles.view}
-          onLayout={(e) => setHeight(e.nativeEvent.layout.height)}
-          contentContainerStyle={{ flex: 1 }}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              enabled={isEnabled}
-            />
-          }
-        >
-          <WebView
-            style={[styles.view, { height }]}
-            onScroll={(e) => setEnabled(
-              typeof handleRefresh === 'function' &&
-              e.nativeEvent.contentOffset.y === 0
-            )
+      <SafeAreaView style={[styles.view, { backgroundColor: COLOR_DARK_MAIN }]}>
+        <View style={styles.view}>
+          <ScrollView
+            style={styles.view}
+            onLayout={(e) => setHeight(e.nativeEvent.layout.height)}
+            contentContainerStyle={{ flex: 1 }}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                enabled={isEnabled}
+              />
             }
-            ref={webViewRef}
-            source={{ uri: URL }}
-            onLoadProgress={handleWebViewLoadProgress}
-            onLoad={handleWebViewLoadEnd}
-            domStorageEnabled={true}
-            cacheEnabled={true}
-            javaScriptEnabled={true}
-            onNavigationStateChange={handleWebViewNavigationStateChange}
-            renderLoading={() => <LoadingAnimation />}
-            allowFileAccess={true}
-            autoManageStatusBarEnabled={true}
-            startInLoadingState={true}
-            allowsBackForwardNavigationGestures={true}
-            nestedScrollEnabled={true}
-            pullToRefreshEnabled={true}
-            onError={handleWebViewError}
-            renderError={(e) => <ErrorScreen
-              errorText={e}
-              action={webViewRef.current?.reload} />}
-            injectedJavaScript={injectedJavaScript}
-            onShouldStartLoadWithRequest={shouldStartLoadWithRequest}
-            onMessage={onMessage}
+          >
+            <WebView
+              style={[styles.view, { height }]}
+              onScroll={(e) => setEnabled(
+                typeof handleRefresh === 'function' &&
+                e.nativeEvent.contentOffset.y === 0
+              )
+              }
+              ref={webViewRef}
+              source={{ uri: URL }}
+              onLoadProgress={handleWebViewLoadProgress}
+              onLoad={handleWebViewLoadEnd}
+              domStorageEnabled={true}
+              cacheEnabled={true}
+              javaScriptEnabled={true}
+              onNavigationStateChange={handleWebViewNavigationStateChange}
+              renderLoading={() => <LoadingAnimation />}
+              allowFileAccess={true}
+              autoManageStatusBarEnabled={true}
+              startInLoadingState={true}
+              allowsBackForwardNavigationGestures={true}
+              nestedScrollEnabled={true}
+              pullToRefreshEnabled={true}
+              onError={handleWebViewError}
+              renderError={(e) => <ErrorScreen
+                errorText={e}
+                action={webViewRef.current?.reload} />}
+              injectedJavaScript={injectedJavaScript}
+              onShouldStartLoadWithRequest={shouldStartLoadWithRequest}
+              onMessage={onMessage}
+            />
+          </ScrollView>
+          {refreshing ? <LoadingAnimation /> : null}
+          <MessageBox
+            message={error}
+            position="top"
+            type="error"
           />
-        </ScrollView>
-        {refreshing ? <LoadingAnimation /> : null}
-        <MessageBox
-          message={error}
-          position="top"
-          type="error"
-        />
-        {backButtonPress ? <MessageBox
-          message={'Нажмите ещё раз, чтобы выйти'}
-        /> : null}
-      </View>
-    </SafeAreaView>
+          {backButtonPress ? <MessageBox
+            message={'Нажмите ещё раз, чтобы выйти'}
+          /> : null}
+        </View>
+      </SafeAreaView>
     </GestureHandlerRootView >
   );
 };
