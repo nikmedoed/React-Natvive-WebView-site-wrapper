@@ -12,7 +12,8 @@ import { WebView, WebViewNavigation } from 'react-native-webview';
 import {
   WebViewErrorEvent,
   ShouldStartLoadRequest,
-  WebViewMessageEvent
+  WebViewMessageEvent,
+  WebViewProgressEvent
 } from 'react-native-webview/src/WebViewTypes';
 import MessageBox from './MessageBox';
 import { URL } from './constants'
@@ -65,46 +66,59 @@ const WebDriver = () => {
     }
   }, [onAndroidBackPress]);
 
-  const handleWebViewError = (syntheticEvent: WebViewErrorEvent) => {
+  const handleWebViewError = useCallback((syntheticEvent: WebViewErrorEvent) => {
     const { nativeEvent } = syntheticEvent;
     const { code, description } = nativeEvent;
     console.error('WebView Error - Code:', code, 'Description:', description);
     setError(`Ошибка загрузки:\n${description}`.trim());
-  };
+  }, []);
 
-  const handleWebViewNavigationStateChange = (newNavState: WebViewNavigation) => {
+  const handleWebViewNavigationStateChange = useCallback((newNavState: WebViewNavigation) => {
     const { url, loading } = newNavState;
-    setRefreshing(loading);
     setCurrentUrl(url);
     return true;
-  };
+  }, []);
 
-  const shouldStartLoadWithRequest = (event: ShouldStartLoadRequest) => {
+  const shouldStartLoadWithRequest = useCallback((event: ShouldStartLoadRequest) => {
     const { url } = event;
     if (url.startsWith(URL)) {
+      setRefreshing(true)
       return true;
     }
     Linking.openURL(url);
     return false;
-  };
+  }, []);
 
-  const onMessage = (event: WebViewMessageEvent) => {
+
+  const onMessage = useCallback((event: WebViewMessageEvent) => {
     const data = event.nativeEvent.data;
     if (data.startsWith('mailto:')) {
       Linking.openURL(data);
     }
-  };
+  }, []);
 
 
-  const handleRefresh = () => {
-    setRefreshing(true);
+
+  const handleRefresh = useCallback(() => {
     if (webViewRef.current) {
+      setRefreshing(true);
       webViewRef.current.reload();
     }
-  };
+  }, []);
 
   const [isEnabled, setEnabled] = useState(typeof handleRefresh === 'function');
 
+  const handleWebViewLoadEnd = useCallback(() => {
+    setRefreshing(false)
+    // SplashScreen.hide();
+  }, []);
+
+  const handleWebViewLoadProgress = useCallback((event: WebViewProgressEvent) => {
+    const { progress } = event.nativeEvent;
+    if (progress >= 0.95) {
+      setRefreshing(false);
+    }
+  }, []);
 
   return (
     <GestureHandlerRootView style={styles.view}>
@@ -130,6 +144,8 @@ const WebDriver = () => {
             }
             ref={webViewRef}
             source={{ uri: URL }}
+            onLoadProgress={handleWebViewLoadProgress}
+            onLoad={handleWebViewLoadEnd}
             domStorageEnabled={true}
             cacheEnabled={true}
             javaScriptEnabled={true}
