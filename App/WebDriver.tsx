@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
-  View,
+  StatusBar,
   BackHandler,
   Platform,
   Linking,
@@ -14,7 +14,8 @@ import {
   WebViewErrorEvent,
   ShouldStartLoadRequest,
   WebViewMessageEvent,
-  WebViewProgressEvent
+  WebViewProgressEvent,
+  FileDownloadEvent
 } from 'react-native-webview/src/WebViewTypes';
 import MessageBox from './MessageBox';
 import { URL, COLOR_DARK_MAIN } from './constants'
@@ -24,6 +25,10 @@ import ErrorScreen from './ErrorScreen'
 // import { ScrollView } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import RNFetchBlob from 'rn-fetch-blob';
+import mime from 'react-native-mime-types'
+import base64 from 'base64-js';
+import CookieManager from '@react-native-cookies/cookies';
 
 const styles = StyleSheet.create({
   view: { flex: 1, height: '100%' }
@@ -37,6 +42,48 @@ const WebDriver = () => {
   const [currentUrl, setCurrentUrl] = useState<string>(URL);
   const [backButtonPress, setBackButtonPress] = useState<boolean>(false);
   const [height, setHeight] = useState(Dimensions.get('screen').height);
+
+  const openDownloadedFile = useCallback(async ({ nativeEvent }: FileDownloadEvent) => {
+    const { downloadUrl } = nativeEvent;
+    try {
+      let cookies = await CookieManager.get(URL, true)
+        .then(e => Object
+          .entries(e)
+          .map(([key, value]) => `${value.name}=${value.value}`)
+          .join('; '))
+
+      const response = await fetch(downloadUrl, {
+        method: 'GET',
+        headers: { cookie: cookies }
+      });
+
+      if (response.status === 200) {
+        const contentType = response.headers.get('content-type') || "";
+        if (contentType.includes("text/html")) {
+          throw Error('Необходимв авторизация')
+        }
+
+        const contentDisposition = response.headers.get('content-disposition') || "";
+        const match = /filename="?([^"]+)"?/.exec(contentDisposition);
+        const fileName = match ? match[1] : 'downloadedFile';
+
+        const extension = mime.extension(contentType) || "";
+        const fullFileName = `${fileName}.${extension}`;
+        const filePath = `${RNFetchBlob.fs.dirs.DownloadDir}/${fullFileName}`
+
+        const data = base64.fromByteArray(new Uint8Array(await response.arrayBuffer()));
+        await RNFetchBlob.fs.writeFile(filePath, data, 'base64');
+
+        RNFetchBlob.ios.previewDocument(filePath);
+      } else {
+        setError('Ошибка при скачивании файла: Неверный статус ответа');
+      }
+
+    } catch (error: any) {
+      setError(`Ошибка при скачивании файла: ${error.message}`);
+      webViewRef.current?.reload()
+    }
+  }, [])
 
   const onAndroidBackPress = useCallback(() => {
     if (webViewRef.current) {
@@ -67,6 +114,26 @@ const WebDriver = () => {
     }
   }, [onAndroidBackPress]);
 
+
+  const activeLinking = useCallback(async (url: string) => {
+    return Linking.openURL(url).catch((e: Error) => setError(e.message));
+  }, []);
+
+
+  const onMessage = useCallback((event: WebViewMessageEvent) => {
+    const data = event.nativeEvent.data;
+    if (data.startsWith('mailto:')) {
+      activeLinking(data);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (error != "") {
+      setTimeout(() => setError(""), 4000)
+    }
+  }, [error]);
+
+
   const handleWebViewError = useCallback((syntheticEvent: WebViewErrorEvent) => {
     const { nativeEvent } = syntheticEvent;
     const { code, description } = nativeEvent;
@@ -86,19 +153,9 @@ const WebDriver = () => {
       setRefreshing(true)
       return true;
     }
-    Linking.openURL(url);
+    activeLinking(url)
     return false;
   }, []);
-
-
-  const onMessage = useCallback((event: WebViewMessageEvent) => {
-    const data = event.nativeEvent.data;
-    if (data.startsWith('mailto:')) {
-      Linking.openURL(data);
-    }
-  }, []);
-
-
 
   const handleRefresh = useCallback(() => {
     if (webViewRef.current) {
@@ -118,66 +175,68 @@ const WebDriver = () => {
     const { progress } = event.nativeEvent;
     if (progress >= 0.95) {
       setRefreshing(false);
+    } else {
+      setRefreshing(true);
     }
   }, []);
 
   return (
     <GestureHandlerRootView style={styles.view}>
       <SafeAreaView style={[styles.view, { backgroundColor: COLOR_DARK_MAIN }]}>
-        <View style={styles.view}>
-          <ScrollView
-            style={styles.view}
-            onLayout={(e) => setHeight(e.nativeEvent.layout.height)}
-            contentContainerStyle={{ flex: 1 }}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={handleRefresh}
-                enabled={isEnabled}
-              />
-            }
-          >
-            <WebView
-              style={[styles.view, { height }]}
-              onScroll={(e) => setEnabled(
-                typeof handleRefresh === 'function' &&
-                e.nativeEvent.contentOffset.y === 0
-              )
-              }
-              ref={webViewRef}
-              source={{ uri: URL }}
-              onLoadProgress={handleWebViewLoadProgress}
-              onLoad={handleWebViewLoadEnd}
-              domStorageEnabled={true}
-              cacheEnabled={true}
-              javaScriptEnabled={true}
-              onNavigationStateChange={handleWebViewNavigationStateChange}
-              renderLoading={() => <LoadingAnimation />}
-              allowFileAccess={true}
-              autoManageStatusBarEnabled={true}
-              startInLoadingState={true}
-              allowsBackForwardNavigationGestures={true}
-              nestedScrollEnabled={true}
-              pullToRefreshEnabled={true}
-              onError={handleWebViewError}
-              renderError={(e) => <ErrorScreen
-                errorText={e}
-                action={webViewRef.current?.reload} />}
-              injectedJavaScript={injectedJavaScript}
-              onShouldStartLoadWithRequest={shouldStartLoadWithRequest}
-              onMessage={onMessage}
+        <StatusBar backgroundColor={COLOR_DARK_MAIN} />
+        <ScrollView
+          style={styles.view}
+          onLayout={(e) => setHeight(e.nativeEvent.layout.height)}
+          contentContainerStyle={{ flex: 1 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              enabled={isEnabled}
             />
-          </ScrollView>
-          {refreshing ? <LoadingAnimation /> : null}
-          <MessageBox
-            message={error}
-            position="top"
-            type="error"
+          }
+        >
+          <WebView
+            style={[styles.view, { height }]}
+            onScroll={(e) => setEnabled(
+              typeof handleRefresh === 'function' &&
+              e.nativeEvent.contentOffset.y === 0
+            )
+            }
+            ref={webViewRef}
+            source={{ uri: URL }}
+            onFileDownload={openDownloadedFile}
+            onLoadProgress={handleWebViewLoadProgress}
+            onLoad={handleWebViewLoadEnd}
+            domStorageEnabled={true}
+            cacheEnabled={true}
+            javaScriptEnabled={true}
+            onNavigationStateChange={handleWebViewNavigationStateChange}
+            renderLoading={() => <LoadingAnimation />}
+            allowFileAccess={true}
+            autoManageStatusBarEnabled={true}
+            startInLoadingState={true}
+            allowsBackForwardNavigationGestures={true}
+            nestedScrollEnabled={true}
+            pullToRefreshEnabled={true}
+            onError={handleWebViewError}
+            renderError={(e) => <ErrorScreen
+              errorText={e}
+              action={webViewRef.current?.reload} />}
+            injectedJavaScript={injectedJavaScript}
+            onShouldStartLoadWithRequest={shouldStartLoadWithRequest}
+            onMessage={onMessage}
           />
-          {backButtonPress ? <MessageBox
-            message={'Нажмите ещё раз, чтобы выйти'}
-          /> : null}
-        </View>
+        </ScrollView>
+        {refreshing ? <LoadingAnimation /> : null}
+        <MessageBox
+          message={error}
+          position="top"
+          type="error"
+        />
+        {backButtonPress ? <MessageBox
+          message={'Нажмите ещё раз, чтобы выйти'}
+        /> : null}
       </SafeAreaView>
     </GestureHandlerRootView >
   );

@@ -9,7 +9,7 @@ Firstly, create a new [**React Native**](https://reactnative.dev) project, boots
 And install dependencies:
 
 ```bash
-npm install react-native-webview react-native-gesture-handler
+npm install react-native-webview react-native-gesture-handler @react-native-cookies/cookies base64-js react-native-mime-types rn-fetch-blob
 
 # OR using Yarn
 ```
